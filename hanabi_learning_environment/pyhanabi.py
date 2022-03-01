@@ -516,8 +516,7 @@ class HanabiState(object):
       self._game = game.c_game
       lib.NewState(self._game, self._state)
     else:
-      self._game = ffi.new("pyhanabi_game_t*")
-      lib.StateParentGame(c_state, self._game)
+      self._game = lib.StateParentGame(c_state)
       lib.CopyState(c_state, self._state)
 
   def copy(self):
@@ -961,9 +960,27 @@ class ObservationEncoder(object):
     shape = [int(x) for x in shape_string.split(",")]
     return shape
 
+  def ownhandshape(self):
+    c_shape_str = lib.OwnHandShape(self._encoder)
+    shape_string = encode_ffi_string(c_shape_str)
+    lib.DeleteString(c_shape_str)
+    shape = [int(x) for x in shape_string.split(",")]
+    return shape
+
   def encode(self, observation):
     """Encode the observation as a sequence of bits."""
     c_encoding_str = lib.EncodeObservation(self._encoder,
+                                           observation.observation())
+    encoding_string = encode_ffi_string(c_encoding_str)
+    lib.DeleteString(c_encoding_str)
+    # Canonical observations are bit strings, so it is ok to encode using a
+    # string. For float or double observations, make a custom object
+    encoding = [int(x) for x in encoding_string.split(",")]
+    return encoding
+
+  def encodeownhand(self, observation):
+    """Encode the observation as a sequence of bits."""
+    c_encoding_str = lib.EncodeOwnHandObservation(self._encoder,
                                            observation.observation())
     encoding_string = encode_ffi_string(c_encoding_str)
     lib.DeleteString(c_encoding_str)
